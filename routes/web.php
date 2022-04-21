@@ -1,6 +1,11 @@
 <?php
 
+use App\Mail\CompanyRecordAvailableEmail;
+use App\Mail\ResetPasswordEmail;
+use App\Models\CompanyRecordRequest;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +18,16 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/reset-password', function () {
+    $user = User::first();
+    $token = Str::random(60);
+
+    return new ResetPasswordEmail($user, $token);
+});
+
+Route::get('/company-record-available', function () {
+    $user = User::first();
+    $companyRecordRequest = CompanyRecordRequest::first();
+
+    return new CompanyRecordAvailableEmail($user, $companyRecordRequest);
 });

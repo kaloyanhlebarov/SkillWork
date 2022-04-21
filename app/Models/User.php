@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Mail\ResetPasswordEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
-class User extends Authenticatable
-{
-    use HasFactory, Notifiable;
+class User extends Authenticatable {
+    use Notifiable;
+
+    protected $table = 'users';
 
     /**
      * The attributes that are mass assignable.
@@ -20,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'api_token',
+        'public_api_token',
     ];
 
     /**
@@ -30,6 +34,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'api_token',
     ];
 
     /**
@@ -40,4 +45,32 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function createApiToken() {
+        $unhashedToken = Str::random(60);
+
+        $this->api_token = hash('sha256', $unhashedToken);
+        $this->public_api_token = $unhashedToken;
+
+        $this->save();
+    }
+
+    public function deleteApiToken() {
+        $this->api_token = null;
+        $this->public_api_token = null;
+
+        $this->save();
+    }
+
+    // Relation
+    public function companyRecordRequests() {
+        return $this->hasMany(CompanyRecordRequest::class);
+    }
+
+    // Overwrite default reset password email
+    public function sendPasswordResetNotification($token) {
+        Mail::to($this->email)->send(
+            new ResetPasswordEmail($this, $token)
+        );
+    }
 }
